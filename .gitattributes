@@ -1,0 +1,20 @@
+# Normalize every text file to LF inside the repository.
+#
+# Git for Windows defaults to core.autocrlf=true, which checks files out
+# with CRLF. .prettierrc.json sets endOfLine: "lf", so without this file
+# `pnpm format:check` fails on every file — on a contributor's machine and
+# in CI alike. `* text=auto eol=lf` stores LF and checks out LF everywhere,
+# which makes the check platform-independent.
+* text=auto eol=lf
+
+# Binary formats must never be line-ending converted.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.pdf  binary
