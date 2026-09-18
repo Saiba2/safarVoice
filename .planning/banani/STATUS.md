@@ -10,10 +10,29 @@ Stack cible: Next.js 16 App Router · React 19 · Tailwind v4 · Prisma 5 / Neon
       `lib/navigation.ts` — commit `241b643`
 - [x] **Landing Page** — `app/page.tsx` + `components/landing/` (9 sections) — vérifié à
       l'exécution (HTTP 200, 96 Ko, contenus présents, aucune erreur)
+- [x] **Authentication — Connexion** — `app/auth/{connexion,inscription,verification}/page.tsx`
+      + `components/auth/{AuthLayout,AuthField,GoogleSignIn}.tsx` — câblé sur
+      `/api/auth/{login,signup,verify-email,resend-verification}` et `oauth/google/start`.
+      Les 3 pages répondent 200 et sont prérendues en statique au build.
 
 ## In progress
-- [ ] Groupe A, écrans restants : AuthPage, ProfileSettings, GeneralSettings,
+- [ ] Groupe A, écrans restants : ProfileSettings, GeneralSettings,
       NotificationsDropdown, TermsOfService
+- [ ] Écrans hors maquette rendus nécessaires par l'API : `/auth/mot-de-passe-oublie`
+      et `/auth/reinitialisation` (liés depuis la page de connexion, pas encore créés)
+
+## Écarts relevés sur l'écran de connexion (2026-09-18)
+- **Photo du panneau gauche** : la maquette la génère via `<Image prompt="...">`, un
+  composant propriétaire Banani. Aucun fichier correspondant n'existe. Remplacé par un
+  dégradé de marque portant le même texte — un vrai visuel reste à choisir.
+- **Bouton Apple** : retiré. Le kit ne fournit qu'un seul fournisseur OAuth (Google).
+  Un bouton Apple serait un contrôle inopérant.
+- **« Se souvenir de moi »** : retiré. Le cookie de rafraîchissement dure 7 jours dans
+  tous les cas ; la case à cocher n'aurait piloté aucun comportement réel.
+- **« +32 000 créateurs »** et les témoignages de la landing sont des affirmations
+  commerciales fournies par le design, non vérifiées. Reproduites telles quelles —
+  elles engagent le produit, pas le code.
+- **`© 2024`** codé en dur → rendu dynamique, comme sur la landing.
 
 ## Pending — écrans récupérés, non planifiés
 
