@@ -16,7 +16,7 @@ vi.mock('@/lib/server/auth', async () => {
 });
 
 import { verifyToken } from '@/lib/server/auth';
-import { GET } from './route';
+import { GET, PATCH } from './route';
 import { NextRequest } from 'next/server';
 
 function makeReq(opts: { tokenCookie?: string; bearer?: string } = {}): NextRequest {
@@ -91,5 +91,115 @@ describe('GET /api/auth/me', () => {
 
     const res = await GET(makeReq({ bearer: 'orphan-jwt' }));
     expect(res.status).toBe(401);
+  });
+});
+
+// --- PATCH /api/auth/me ---------------------------------------------------
+// Added with the "Paramètres du profil" screen. Covers the CSRF gate, the
+// validation boundaries, and the absent-vs-null distinction that lets the
+// caller clear one field without touching the others.
+
+function makePatch(
+  body: unknown,
+  opts: { csrf?: 'match' | 'missing'; bearer?: string } = {},
+): NextRequest {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if ((opts.csrf ?? 'match') === 'match') {
+    headers['x-csrf-token'] = 'csrf-tok';
+    headers['cookie'] = 'app-csrf=csrf-tok';
+  }
+  headers.authorization = `Bearer ${opts.bearer ?? 'valid-access-token'}`;
+  return new NextRequest('https://test/api/auth/me', {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(body),
+  });
+}
+
+function authed(): void {
+  vi.mocked(verifyToken).mockResolvedValue({ sub: 'u1', email: 'a@b.com', tokenVersion: 0 });
+}
+
+describe('PATCH /api/auth/me', () => {
+  beforeEach(() => {
+    prismaMock.user.update.mockReset();
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'a@b.com',
+      tokenVersion: 0,
+    } as never);
+  });
+
+  it('rejects a request without the CSRF header', async () => {
+    authed();
+    const res = await PATCH(makePatch({ name: 'Awa' }, { csrf: 'missing' }));
+    expect(res.status).toBe(403);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('updates only the fields present in the body', async () => {
+    authed();
+    prismaMock.user.update.mockResolvedValue({
+      name: 'Awa Diop',
+      avatarUrl: null,
+      country: 'SN',
+      preferredLanguage: null,
+    } as never);
+
+    const res = await PATCH(makePatch({ name: 'Awa Diop', country: 'sn' }));
+    expect(res.status).toBe(200);
+
+    const arg = prismaMock.user.update.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    // country is upper-cased; the two untouched fields must not appear at all,
+    // otherwise they would be written as null.
+    expect(arg.data).toEqual({ name: 'Awa Diop', country: 'SN' });
+    expect('avatarUrl' in arg.data).toBe(false);
+    expect('preferredLanguage' in arg.data).toBe(false);
+  });
+
+  it('clears a field when it is explicitly null', async () => {
+    authed();
+    prismaMock.user.update.mockResolvedValue({
+      name: null,
+      avatarUrl: null,
+      country: null,
+      preferredLanguage: null,
+    } as never);
+
+    const res = await PATCH(makePatch({ name: null }));
+    expect(res.status).toBe(200);
+    const arg = prismaMock.user.update.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(arg.data).toEqual({ name: null });
+  });
+
+  it('rejects an empty body rather than issuing a no-op update', async () => {
+    authed();
+    const res = await PATCH(makePatch({}));
+    expect(res.status).toBe(400);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a country that is not two letters', async () => {
+    authed();
+    const res = await PATCH(makePatch({ country: 'SEN' }));
+    expect(res.status).toBe(400);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects an avatarUrl that is not a URL', async () => {
+    authed();
+    const res = await PATCH(makePatch({ avatarUrl: 'not-a-url' }));
+    expect(res.status).toBe(400);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a caller whose account no longer exists', async () => {
+    // Same shape as GET Test 4: the token verifies, but requireAuth's DB
+    // re-check finds nothing, so the request is refused before any write.
+    authed();
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    const res = await PATCH(makePatch({ name: 'Awa' }));
+    expect(res.status).toBe(401);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 });

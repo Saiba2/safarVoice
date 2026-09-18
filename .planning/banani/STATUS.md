@@ -15,11 +15,42 @@ Stack cible: Next.js 16 App Router · React 19 · Tailwind v4 · Prisma 5 / Neon
       `/api/auth/{login,signup,verify-email,resend-verification}` et `oauth/google/start`.
       Les 3 pages répondent 200 et sont prérendues en statique au build.
 
+- [x] **Paramètres du profil** — `app/settings/profil/page.tsx` + `app/settings/mot-de-passe/page.tsx`
+      + `components/ui/{Toggle,InitialsAvatar}.tsx` + `lib/countries.ts`.
+      Backend ajouté : `PATCH /api/auth/me`, champs Prisma `country` et
+      `preferredLanguage`, migration `5_user_profile_fields` appliquée sur Neon.
+      7 nouveaux tests (577 au total).
+
 ## In progress
-- [ ] Groupe A, écrans restants : ProfileSettings, GeneralSettings,
-      NotificationsDropdown, TermsOfService
+- [ ] Groupe A, écrans restants : GeneralSettings, NotificationsDropdown, TermsOfService
 - [ ] Écrans hors maquette rendus nécessaires par l'API : `/auth/mot-de-passe-oublie`
       et `/auth/reinitialisation` (liés depuis la page de connexion, pas encore créés)
+
+## Écarts relevés sur les paramètres du profil (2026-09-18)
+Sur ~14 contrôles de la maquette, 3 seulement avaient un backend. Décision
+utilisateur : construire ce qui manque pour le cœur, écarter le reste.
+
+**Construit** : nom, pays, langue préférée, photo de profil (via `/api/upload`
+puis `PATCH /api/auth/me`), changement/définition de mot de passe, bascule des
+notifications par e-mail.
+
+**Écartés, chacun étant une fonctionnalité à part entière** : authentification à
+deux facteurs, liste des sessions actives, export des données personnelles,
+suppression de compte. Ces sections ne sont pas affichées — plutôt que dessinées
+et inertes.
+
+**Deux champs fusionnés en un.** La maquette sépare « Prénom » et « Nom ». Le
+modèle de données n'a qu'un champ `name`. Découper puis recoller sur le premier
+espace mutile les prénoms composés, fréquents ici (« Mouhamadou Lamine Fall »).
+Un seul champ « Nom complet » conserve exactement ce que l'utilisateur saisit.
+
+**« Partage des données » et « Thème sombre »** retirés de cet écran : le premier
+n'a aucun champ, le second relève des paramètres généraux.
+
+**Les notifications** sont modélisées par type d'événement côté API, alors que la
+maquette offre une bascule globale. Celle-ci écrit donc la même valeur pour tous
+les types connus (`WELCOME`, `PAYMENT_RECEIVED`) — à compléter quand de nouveaux
+gabarits seront ajoutés.
 
 ## Écarts relevés sur l'écran de connexion (2026-09-18)
 - **Photo du panneau gauche** : la maquette la génère via `<Image prompt="...">`, un

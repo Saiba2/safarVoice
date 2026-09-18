@@ -20,8 +20,12 @@ export const runtime = 'nodejs';
 
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
+import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
+import { log } from '@/lib/server/observability/log';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -49,6 +53,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         // Both are nullable: email/password signups never populate them.
         name: true,
         avatarUrl: true,
+        country: true,
+        preferredLanguage: true,
         oauthAccounts: { select: { provider: true } },
       },
     });
@@ -76,10 +82,91 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         : null,
       name: dbUser?.name ?? null,
       avatarUrl: dbUser?.avatarUrl ?? null,
+      country: dbUser?.country ?? null,
+      preferredLanguage: dbUser?.preferredLanguage ?? null,
       hasPassword: !!dbUser?.passwordHash,
       linkedProviders: (dbUser?.oauthAccounts ?? []).map((a) => a.provider),
     };
 
     return NextResponse.json({ user }, { status: 200, headers: { 'x-request-id': ctx.requestId } });
+  });
+}
+
+// PATCH /api/auth/me — update the caller's own profile.
+//
+// Added for the "Paramètres du profil" screen, which needs a way to persist
+// the display name, avatar, country and interface language. Only these four
+// fields are writable: email changes must go through a verification flow,
+// and role/status are admin-only (see /api/admin/users/[id]/role).
+//
+// Every field is optional and nullable — sending `{ "name": null }` clears
+// the name, while omitting a key leaves it untouched. The two are different
+// operations, which is why the schema distinguishes "absent" from "null".
+const PatchBody = z
+  .object({
+    name: z.string().trim().min(1).max(120).nullable().optional(),
+    avatarUrl: z.string().url().max(2048).nullable().optional(),
+    // ISO 3166-1 alpha-2, upper-cased on the way in so "sn" and "SN" agree.
+    country: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z]{2}$/)
+      .nullable()
+      .optional(),
+    // BCP 47, kept short: "fr", "fr-SN", "wo".
+    preferredLanguage: z.string().trim().min(2).max(35).nullable().optional(),
+  })
+  // An empty body would issue a pointless UPDATE and return 200, which reads
+  // as success to the caller. Reject it instead.
+  .refine((v) => Object.keys(v).length > 0, { message: 'No field to update' });
+
+export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const ctx = makeRequestContext(req.headers);
+  return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) {
+      csrfFail.headers.set('x-request-id', ctx.requestId);
+      return csrfFail;
+    }
+
+    const auth = await requireAuth(req.headers.get('authorization'));
+    if (auth instanceof NextResponse) {
+      auth.headers.set('x-request-id', ctx.requestId);
+      return auth;
+    }
+
+    const body = await req.json().catch(() => null);
+    const parsed = PatchBody.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', message: 'Invalid request body' },
+        { status: 400, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
+
+    // Build the update from present keys only, so an omitted field is not
+    // overwritten with undefined.
+    const data: Prisma.UserUpdateInput = {};
+    if ('name' in parsed.data) data.name = parsed.data.name ?? null;
+    if ('avatarUrl' in parsed.data) data.avatarUrl = parsed.data.avatarUrl ?? null;
+    if ('country' in parsed.data) {
+      data.country = parsed.data.country ? parsed.data.country.toUpperCase() : null;
+    }
+    if ('preferredLanguage' in parsed.data) {
+      data.preferredLanguage = parsed.data.preferredLanguage ?? null;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: auth.user.sub },
+      data,
+      select: { name: true, avatarUrl: true, country: true, preferredLanguage: true },
+    });
+
+    log.info('profile updated', { userId: auth.user.sub, fields: Object.keys(data) });
+
+    return NextResponse.json(
+      { user: updated },
+      { status: 200, headers: { 'x-request-id': ctx.requestId } },
+    );
   });
 }

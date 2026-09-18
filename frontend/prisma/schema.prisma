@@ -23,6 +23,12 @@ model User {
   name              String?
   // Optional avatar URL — populated from OAuth profile on first sign-in.
   avatarUrl         String?
+  // ISO 3166-1 alpha-2 country code (e.g. "SN"), chosen by the user on the
+  // profile screen. Nullable: nothing infers it at signup.
+  country           String?
+  // BCP 47 language tag for the interface (e.g. "fr"). Distinct from the
+  // synthesis language, which belongs to each TTS job, not to the account.
+  preferredLanguage String?
   // App-wide role. USER is the default; ADMIN unlocks /admin back-office;
   // SUPERADMIN can promote/demote other admins. Bootstrap an initial
   // SUPERADMIN via `pnpm db:make-superadmin <email>` (see scripts).

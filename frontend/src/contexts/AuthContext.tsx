@@ -16,6 +16,10 @@ export interface User {
   name: string | null;
   /** Avatar URL, populated from the OAuth profile on first sign-in. */
   avatarUrl: string | null;
+  /** ISO 3166-1 alpha-2 country code, e.g. "SN". Null until the user picks one. */
+  country: string | null;
+  /** BCP 47 interface language, e.g. "fr". Null until the user picks one. */
+  preferredLanguage: string | null;
   /** false when the account was created via OAuth and never set a password. */
   hasPassword: boolean;
   /** Provider names already linked, e.g. ['google']. Empty for pure email/password accounts. */
