@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowRight, ChevronsUpDown, Crown, Headphones, Radio } from 'lucide-react';
 
+import InitialsAvatar from '@/components/ui/InitialsAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { NAV_ITEMS } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
@@ -102,7 +103,7 @@ export default function SidebarNav({ onNavigate = noop }: { onNavigate?: () => v
       </div>
 
       <div className="flex items-center gap-3 border-t border-border px-4 py-3">
-        <UserInitials name={user?.name ?? user?.email ?? null} />
+        <InitialsAvatar name={user?.name ?? user?.email ?? null} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">
             {user?.name ?? user?.email ?? 'Mon compte'}
@@ -111,30 +112,6 @@ export default function SidebarNav({ onNavigate = noop }: { onNavigate?: () => v
         </div>
         <ChevronsUpDown size={14} className="text-muted-foreground" />
       </div>
-    </div>
-  );
-}
-
-/**
- * Banani's mockup uses its own <UserAvatar> illustration component, which has
- * no equivalent here and would need a real uploaded image. Until avatars are
- * wired to Cloudinary, initials on the brand colour keep the same 32px
- * footprint without inventing a face for the user.
- */
-function UserInitials({ name }: { name: string | null }) {
-  const initials = (name ?? '?')
-    .split(/[\s@.]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
-
-  return (
-    <div
-      aria-hidden
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground"
-    >
-      {initials || '?'}
     </div>
   );
 }

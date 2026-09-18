@@ -5,10 +5,15 @@ Fetched: 2026-09-18 (12 screens, 16 shared files, ~137 000 chars)
 Stack cible: Next.js 16 App Router · React 19 · Tailwind v4 · Prisma 5 / Neon
 
 ## Done
-_(rien encore — étape 0 du skill en cours)_
+- [x] **Fondations** — `globals.css` (@theme Banani), `layout.tsx` (DM Sans, métadonnées FR),
+      `components/layout/{SidebarNav,TopBar,AppShell}.tsx`, `components/ui/InitialsAvatar.tsx`,
+      `lib/navigation.ts` — commit `241b643`
+- [x] **Landing Page** — `app/page.tsx` + `components/landing/` (9 sections) — vérifié à
+      l'exécution (HTTP 200, 96 Ko, contenus présents, aucune erreur)
 
 ## In progress
-- [ ] Étape 0 — cartographie système + questions utilisateur — session courante
+- [ ] Groupe A, écrans restants : AuthPage, ProfileSettings, GeneralSettings,
+      NotificationsDropdown, TermsOfService
 
 ## Pending — écrans récupérés, non planifiés
 
@@ -19,7 +24,7 @@ _(rien encore — étape 0 du skill en cours)_
 | Paramètres du profil | `ProfileSettings.jsx` | `/settings/profil` | `/api/auth/me`, `/change-password`, `/withdrawal-pin` |
 | Paramètres généraux | `GeneralSettings.jsx` | `/settings` | `/api/notifications/prefs` |
 | Notifications (Dropdown) | `NotificationsDropdown.jsx` | composant global | `/api/notifications`, `/notifications/count` |
-| Landing Page | `LandingPage.jsx` | `/` | aucune (statique) |
+| ~~Landing Page~~ ✅ | `LandingPage.jsx` | `/` | aucune (statique) |
 | Terms of Service | `TermsOfService.jsx` | `/conditions` | aucune (statique) |
 
 ### Groupe B — nécessitent de nouveaux modèles Prisma + routes API
@@ -65,3 +70,22 @@ peut prendre.
 - Modèle de monétisation : abonnement récurrent ou packs de crédits ? — posée 2026-09-18, en attente
 - Ordre d'implémentation (groupe A d'abord, ou verticale complète) ? — posée 2026-09-18, en attente
 - Adaptations mobile (sidebar → menu, panneau droit → tiroir) ? — posée 2026-09-18, en attente
+
+## Décisions produit prises avec l'utilisateur (2026-09-18)
+- **Ordre** : fondations + groupe A d'abord.
+- **Moteur TTS** : ElevenLabs — à câbler derrière une abstraction `TtsProvider`
+  calquée sur `PaymentProvider`, quand le groupe B démarrera.
+- **Monétisation** : packs de crédits (achat ponctuel via Bictorys/Wave), pas d'abonnement.
+- **Mobile** : sidebar → tiroir coulissant, panneau droit → feuille modale,
+  colonne unique, zones tactiles ≥ 44 px.
+
+## Écarts relevés dans le design, à arbitrer
+- **Langues incohérentes.** La landing annonce Français, Anglais, Espagnol, Allemand,
+  Chinois, Arabe, Hindi « +30 autres ». Les écrans produit listent Wolof, Français,
+  Anglais, Arabe, Swahili. Le wolof — l'argument différenciant — est absent de la landing.
+- **`Math.random()` dans le rendu** du `LandingHero` Banani : casserait l'hydratation SSR.
+  Remplacé par une liste fixe.
+- **`© 2024` codé en dur** dans le footer Banani → rendu dynamique.
+- **Crédits et notifications** : la maquette affiche « 12 500 FCFA » et une pastille rouge
+  permanente. Aucun modèle ne peut les alimenter → placeholder « — » et pastille
+  conditionnelle, plutôt que des valeurs inventées.
