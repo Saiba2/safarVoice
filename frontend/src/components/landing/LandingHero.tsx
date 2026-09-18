@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Play, PlayCircle, Radio } from 'lucide-react';
 
-import InitialsAvatar from '@/components/ui/InitialsAvatar';
+import PersonAvatar from '@/components/ui/PersonAvatar';
 
 const PROMISES = [
   'Accents vocaux locaux',
@@ -16,12 +16,16 @@ const PROMISES = [
  * Banani picked each preview avatar with Math.random() inside render. That
  * would produce different markup on the server and on the client and break
  * hydration, so the list is fixed here.
+ *
+ * `photo` points at a file under public/voices/ — see the README there for
+ * the expected names and format. Any file that is missing falls back to
+ * initials, so the section works before the photos are supplied.
  */
 const PREVIEW_VOICES = [
-  { name: 'Awa', country: 'Sénégal' },
-  { name: 'Thadée', country: 'Mali' },
-  { name: 'Zuri', country: 'Kenya' },
-  { name: 'Jamal', country: 'Maroc' },
+  { name: 'Awa', country: 'Sénégal', photo: '/voices/awa.svg' },
+  { name: 'Thadée', country: 'Mali', photo: '/voices/thadee.svg' },
+  { name: 'Zuri', country: 'Kenya', photo: '/voices/zuri.svg' },
+  { name: 'Jamal', country: 'Maroc', photo: '/voices/jamal.svg' },
 ] as const;
 
 export default function LandingHero() {
@@ -94,7 +98,7 @@ export default function LandingHero() {
               <ul className="space-y-2.5">
                 {PREVIEW_VOICES.map((voice) => (
                   <li key={voice.name} className="flex items-center gap-2.5 p-2">
-                    <InitialsAvatar name={voice.name} />
+                    <PersonAvatar name={voice.name} src={voice.photo} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground">{voice.name}</p>
                       <p className="text-xs text-muted-foreground">{voice.country}</p>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Portrait illustré">
+  <defs><clipPath id="c"><circle cx="128" cy="128" r="128"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="256" height="256" fill="#f4f2ee"/>
+    <path d="M128 148c42 0 74 26 82 60v48H46v-48c8-34 40-60 82-60z" fill="#1a1a18"/>
+    <rect x="108" y="126" width="40" height="40" rx="18" fill="#ae7238"/>
+    <ellipse cx="128" cy="98" rx="46" ry="52" fill="#c68642"/>
+    <!-- Beard over the jaw, then hair over the crown: each layer sits on the
+         skin it frames, so neither is hidden by the other. -->
+    <path d="M84 104c2 30 20 48 44 48s42-18 44-48c2 26-4 50-20 58-8 4-16 6-24 6s-16-2-24-6c-16-8-22-32-20-58z" fill="#2b2118"/>
+    <path d="M110 124c6 6 30 6 36 0 2 8-6 14-18 14s-20-6-18-14z" fill="#c68642"/>
+    <path d="M82 90c-2-32 18-54 46-54s48 22 46 54c4-36-14-58-46-58S78 54 82 90z" fill="#2b2118"/>
+    <ellipse cx="112" cy="98" rx="4.5" ry="5.5" fill="#2b2118"/>
+    <ellipse cx="144" cy="98" rx="4.5" ry="5.5" fill="#2b2118"/>
+    <path d="M104 84c4-4 12-4 16 0" stroke="#2b2118" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M136 84c4-4 12-4 16 0" stroke="#2b2118" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M118 120c6 5 14 5 20 0" stroke="#2b2118" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

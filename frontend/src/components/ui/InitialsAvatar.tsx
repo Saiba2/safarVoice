@@ -14,7 +14,9 @@ export default function InitialsAvatar({
   className,
 }: {
   name: string | null;
-  className?: string;
+  // `| undefined` is explicit because exactOptionalPropertyTypes is on and
+  // callers forward an optional className straight through.
+  className?: string | undefined;
 }) {
   const initials = (name ?? '')
     // Split on spaces, and on @ / . so an email yields sensible letters.
