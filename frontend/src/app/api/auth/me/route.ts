@@ -45,6 +45,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         createdAt: true,
         updatedAt: true,
         passwordHash: true,
+        // Display name and avatar drive the sidebar and profile screens.
+        // Both are nullable: email/password signups never populate them.
+        name: true,
+        avatarUrl: true,
         oauthAccounts: { select: { provider: true } },
       },
     });
@@ -70,6 +74,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           ? dbUser.updatedAt.toISOString()
           : dbUser.updatedAt
         : null,
+      name: dbUser?.name ?? null,
+      avatarUrl: dbUser?.avatarUrl ?? null,
       hasPassword: !!dbUser?.passwordHash,
       linkedProviders: (dbUser?.oauthAccounts ?? []).map((a) => a.provider),
     };

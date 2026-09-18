@@ -1,1 +1,70 @@
 @import 'tailwindcss';
+
+/*
+ * Design tokens — mirrored 1:1 from the Banani flow "SafarVoice Final"
+ * (/style.css). Tailwind v4 reads @theme and generates the matching
+ * utilities, so `--color-primary` gives `bg-primary` / `text-primary`,
+ * `--radius-lg` gives `rounded-lg`, `--font-body` gives `font-body`.
+ *
+ * Never hard-code these hex values in components — always go through the
+ * utility class, so a theme change here propagates everywhere.
+ */
+@theme {
+  /* Surfaces and text */
+  --color-background: #fafaf9;
+  --color-foreground: #1a1a18;
+  --color-border: #e9e7e2;
+  --color-input: #f4f2ee;
+
+  /* Brand — the SafarVoice gold */
+  --color-primary: #c49a2e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5edd8;
+  --color-secondary-foreground: #a07820;
+  --color-accent: #f0e6c8;
+
+  /* Muted text and fills */
+  --color-muted: #eeebe5;
+  --color-muted-foreground: #8c8a84;
+
+  /* Sidebar surface — white against the off-white page background */
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: #1a1a18;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius: var(--radius-sm);
+
+  /*
+   * DM Sans is loaded by next/font in layout.tsx, which exposes it as
+   * --font-dm-sans. Banani's markup uses font-body and font-headings, so
+   * both map onto the same family here.
+   */
+  --font-body: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-headings: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* Banani's type scale overrides Tailwind's defaults on purpose. */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 34px;
+  --text-4xl: 42px;
+}
+
+/*
+ * Banani applies bg-background / font-body on each screen's root div. We
+ * set them on body instead so every page inherits them, including the
+ * ones we add that have no Banani counterpart (error, not-found).
+ */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+  }
+}

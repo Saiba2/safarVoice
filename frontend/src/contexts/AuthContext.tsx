@@ -12,6 +12,10 @@ export interface User {
   emailVerifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Display name. Null for email/password signups that never set one. */
+  name: string | null;
+  /** Avatar URL, populated from the OAuth profile on first sign-in. */
+  avatarUrl: string | null;
   /** false when the account was created via OAuth and never set a password. */
   hasPassword: boolean;
   /** Provider names already linked, e.g. ['google']. Empty for pure email/password accounts. */
