@@ -1,12 +1,19 @@
 import { AudioLines, Globe, Shield, Zap, type LucideIcon } from 'lucide-react';
 
+import { TOTAL_LANGUAGES } from '@/lib/languages';
+
 const FEATURES: readonly { icon: LucideIcon; title: string; description: string }[] = [
   {
     icon: AudioLines,
     title: 'Des voix ultra naturelles',
     description: 'Un rendu humain et expressif.',
   },
-  { icon: Globe, title: 'Plus de 30 langues', description: 'Avec des accents authentiques.' },
+  {
+    icon: Globe,
+    // Derived, so this headline can never drift from the actual catalogue.
+    title: `${TOTAL_LANGUAGES} langues`,
+    description: 'Avec des accents authentiques.',
+  },
   { icon: Zap, title: 'Rapide et simple', description: 'Vos voix en quelques secondes.' },
   { icon: Shield, title: 'Sécurité et fiabilité', description: 'Vos données sont privilégiées.' },
 ];
