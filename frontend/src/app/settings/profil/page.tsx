@@ -315,6 +315,28 @@ export default function ProfilSettingsPage() {
                 {user.hasPassword ? 'Modifier' : 'Définir'}
               </Link>
             </div>
+
+            {/* Linked providers moved here from the starter's /settings page,
+                which the Banani "Paramètres généraux" screen replaced. The
+                account's sign-in methods belong beside its password. */}
+            <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-border bg-input p-4">
+              <div>
+                <p className="font-semibold text-foreground">Connexion avec Google</p>
+                <p className="text-xs text-muted-foreground">
+                  {user.linkedProviders.includes('google')
+                    ? 'Votre compte Google est lié.'
+                    : 'Aucun compte Google lié.'}
+                </p>
+              </div>
+              {!user.linkedProviders.includes('google') && (
+                <a
+                  href="/api/auth/oauth/google/start?next=/settings/profil"
+                  className="text-sm font-semibold text-primary"
+                >
+                  Lier
+                </a>
+              )}
+            </div>
           </section>
 
           <section className="mb-8 rounded-xl border border-border bg-sidebar p-5 sm:p-6">

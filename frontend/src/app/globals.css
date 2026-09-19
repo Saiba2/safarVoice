@@ -57,11 +57,115 @@
 }
 
 /*
+ * Dark palette.
+ *
+ * Banani supplies light colours only, so this is designed here rather than
+ * reproduced. It works by redefining the same token names: every component
+ * already writes bg-background, text-foreground, border-border and so on, so
+ * the whole application inverts without a single `dark:` class or any change
+ * to existing markup. Adding a screen costs nothing extra in dark mode.
+ *
+ * The greys are warm (a touch of yellow-brown) rather than neutral, so the
+ * gold does not read as an accent bolted onto a cold grey app.
+ *
+ * Two deliberate departures from a naive inversion. The gold lightens to
+ * #d4a942: #c49a2e on a near-black ground is too dim to carry a primary
+ * button. And primary-foreground flips to near-black, because white text on
+ * gold fails contrast in either theme — it only passed in light mode by
+ * accident of the button being small.
+ *
+ * Declared twice on purpose: once behind prefers-color-scheme for the
+ * "Système" setting, once behind an explicit data-theme so the manual choice
+ * wins over the OS. The media query is guarded by :not([data-theme='light'])
+ * so choosing Clair on a dark OS is respected.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-background: #14130f;
+    --color-foreground: #f0eee8;
+    --color-border: #2c2a24;
+    --color-input: #1e1c17;
+
+    --color-primary: #d4a942;
+    --color-primary-foreground: #14130f;
+    --color-secondary: #2a2418;
+    --color-secondary-foreground: #e0c478;
+    --color-accent: #332b1a;
+
+    --color-muted: #24221c;
+    --color-muted-foreground: #9a968c;
+
+    --color-sidebar: #1a1813;
+    --color-sidebar-foreground: #f0eee8;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-background: #14130f;
+  --color-foreground: #f0eee8;
+  --color-border: #2c2a24;
+  --color-input: #1e1c17;
+
+  --color-primary: #d4a942;
+  --color-primary-foreground: #14130f;
+  --color-secondary: #2a2418;
+  --color-secondary-foreground: #e0c478;
+  --color-accent: #332b1a;
+
+  --color-muted: #24221c;
+  --color-muted-foreground: #9a968c;
+
+  --color-sidebar: #1a1813;
+  --color-sidebar-foreground: #f0eee8;
+}
+
+/*
+ * Interface density.
+ *
+ * Tailwind v4 derives every spacing utility from --spacing (p-4 compiles to
+ * calc(var(--spacing) * 4)), so moving that single value rescales all
+ * padding, margins and gaps at once. No component knows density exists.
+ *
+ * The range is deliberately narrow: 0.22rem to 0.28rem against a 0.25rem
+ * default. Wider steps break carefully spaced layouts rather than adjusting
+ * them.
+ */
+:root[data-density='compact'] {
+  --spacing: 0.22rem;
+}
+
+:root[data-density='spacious'] {
+  --spacing: 0.28rem;
+}
+
+/*
  * Banani applies bg-background / font-body on each screen's root div. We
  * set them on body instead so every page inherits them, including the
  * ones we add that have no Banani counterpart (error, not-found).
+ *
+ * color-scheme tells the browser to render its own chrome — scrollbars,
+ * form controls, the autofill background — in the matching theme. Without
+ * it a dark page keeps white scrollbars and blue-white autofilled inputs.
  */
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);

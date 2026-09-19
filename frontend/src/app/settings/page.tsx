@@ -1,204 +1,239 @@
-// /settings — account-level controls.
-//
-// Two flows live here today:
-//   1. Set / change password
-//      - If the account was created via OAuth (hasPassword=false), the
-//        "Set password" form calls POST /api/auth/set-password — no current
-//        password required, because there isn't one.
-//      - Otherwise the "Change password" form calls PUT /api/auth/change-password
-//        with currentPassword + newPassword.
-//   2. Link a provider (Google)
-//      - When Google is not already linked, the button kicks the user to
-//        GET /api/auth/oauth/google/start?next=/settings, which goes through
-//        the normal OAuth dance and lands back on /settings linked.
-//      - When already linked, we just show a "linked" pill — no unlink action
-//        yet (would need a /api/auth/oauth/google/unlink endpoint with a
-//        guard refusing to leave the user without any sign-in method).
 'use client';
 
-import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { api, ApiError } from '@/lib/api';
-import { useAuth, useUser } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
+import { Monitor, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
 
-export default function SettingsPage() {
-  const user = useUser();
-  const { refresh } = useAuth();
-  const { toast } = useToast();
+import AppShell from '@/components/layout/AppShell';
+import RangeField from '@/components/ui/RangeField';
+import SegmentedControl, { type Segment } from '@/components/ui/SegmentedControl';
+import Toggle from '@/components/ui/Toggle';
+import { useUser } from '@/contexts/AuthContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
+import {
+  DATE_FORMAT_LABELS,
+  TIME_ZONES,
+  type Density,
+  type DateFormat,
+  type Theme,
+} from '@/lib/preferences';
+import { UI_LANGUAGES } from '@/lib/countries';
 
-  // Password form state — fields used by either branch.
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const THEME_SEGMENTS: readonly Segment<Theme>[] = [
+  { value: 'light', label: 'Clair', icon: Sun },
+  { value: 'dark', label: 'Sombre', icon: Moon },
+  { value: 'system', label: 'Système', icon: Monitor },
+];
 
-  if (!user) {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-2 px-4">
-        <p className="text-sm text-gray-600">Chargement…</p>
-      </main>
-    );
-  }
+const DENSITY_SEGMENTS: readonly Segment<Density>[] = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'spacious', label: 'Spacieux' },
+];
 
-  const hasPassword = user.hasPassword;
-  const googleLinked = user.linkedProviders.includes('google');
+const SHORTCUTS: readonly { keys: string; action: string }[] = [
+  { keys: 'Ctrl + E', action: "Ouvrir l'éditeur" },
+  { keys: 'Ctrl + Espace', action: 'Jouer / Pause' },
+  { keys: 'Ctrl + S', action: "Télécharger l'audio" },
+  { keys: 'Ctrl + L', action: 'Ouvrir la bibliothèque de voix' },
+  { keys: 'Ctrl + ,', action: 'Ouvrir les paramètres' },
+];
 
-  async function onSubmitPassword(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
+export default function GeneralSettingsPage() {
+  const user = useUser('/auth/connexion');
+  const { preferences, update } = usePreferences();
 
-    if (newPassword.length === 0) {
-      setError('Saisis un nouveau mot de passe.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('La confirmation ne correspond pas au nouveau mot de passe.');
-      return;
-    }
+  if (!user) return null;
 
-    setSubmitting(true);
-    try {
-      if (hasPassword) {
-        await api('/api/auth/change-password', {
-          method: 'PUT',
-          body: { currentPassword, newPassword },
-        });
-        toast('Mot de passe mis à jour.', 'success');
-      } else {
-        await api('/api/auth/set-password', {
-          method: 'POST',
-          body: { newPassword },
-        });
-        toast('Mot de passe défini. Tu peux maintenant te connecter par email.', 'success');
-      }
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      await refresh();
-    } catch (err) {
-      if (err instanceof ApiError) {
-        const map: Record<string, string> = {
-          INVALID_CREDENTIALS: 'Mot de passe actuel incorrect.',
-          PASSWORD_BANNED: 'Ce mot de passe est trop courant.',
-          PASSWORD_TOO_SHORT: err.message || 'Mot de passe trop court.',
-          PASSWORD_PWNED: 'Ce mot de passe a fuité — choisis-en un autre.',
-          PASSWORD_ALREADY_SET:
-            'Un mot de passe est déjà défini. Utilise « changer le mot de passe ».',
-          VALIDATION_FAILED: 'Champs invalides.',
-        };
-        setError(map[err.code] ?? err.message);
-      } else {
-        setError('Erreur réseau. Réessaie.');
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const languageLabel =
+    UI_LANGUAGES.find((l) => l.code === user.preferredLanguage)?.name ?? 'Non renseignée';
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-8 px-4 py-12">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">Paramètres</h1>
-        <p className="text-sm text-gray-600">Connecté en tant que {user.email}</p>
-      </header>
-
-      {/* ── Password section ─────────────────────────────────────────── */}
-      <section className="flex flex-col gap-3 rounded-lg border border-gray-200 p-5">
-        <h2 className="text-lg font-semibold">
-          {hasPassword ? 'Changer le mot de passe' : 'Définir un mot de passe'}
-        </h2>
-        <p className="text-sm text-gray-600">
-          {hasPassword
-            ? 'Tu peux modifier ton mot de passe ici. Les autres sessions seront déconnectées.'
-            : 'Tu t’es connecté via Google. Définis un mot de passe pour pouvoir aussi te connecter par email.'}
-        </p>
-        <form onSubmit={onSubmitPassword} className="mt-2 flex flex-col gap-4">
-          {hasPassword && (
-            <label className="flex flex-col gap-1 text-sm">
-              Mot de passe actuel
-              <input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2"
-              />
-            </label>
-          )}
-          <label className="flex flex-col gap-1 text-sm">
-            Nouveau mot de passe
-            <input
-              type="password"
-              required
-              autoComplete="new-password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Confirmer le nouveau mot de passe
-            <input
-              type="password"
-              required
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-          {error && (
-            <p role="alert" className="text-sm text-red-600">
-              {error}
+    <AppShell>
+      <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
+        <div className="max-w-3xl">
+          <div className="mb-8">
+            <h1 className="font-headings text-2xl font-bold text-foreground lg:text-3xl">
+              Paramètres généraux
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Personnalisez votre expérience SafarVoice.
             </p>
-          )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-          >
-            {submitting
-              ? 'Enregistrement…'
-              : hasPassword
-                ? 'Changer le mot de passe'
-                : 'Définir le mot de passe'}
-          </button>
-        </form>
-      </section>
-
-      {/* ── Linked providers section ────────────────────────────────── */}
-      <section className="flex flex-col gap-3 rounded-lg border border-gray-200 p-5">
-        <h2 className="text-lg font-semibold">Comptes liés</h2>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Google</span>
-            <span className="text-xs text-gray-500">
-              {googleLinked
-                ? 'Tu peux te connecter via Google.'
-                : 'Lie ton compte Google pour te connecter en un clic.'}
-            </span>
           </div>
-          {googleLinked ? (
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-              Lié
-            </span>
-          ) : (
-            <a
-              href="/api/auth/oauth/google/start?next=/settings"
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-            >
-              Lier Google
-            </a>
-          )}
-        </div>
-      </section>
 
-      <Link href="/dashboard" className="text-center text-sm text-gray-600 underline">
-        Retour au dashboard
-      </Link>
-    </main>
+          <section className="mb-8 rounded-xl border border-border bg-sidebar p-5 sm:p-6">
+            <h2 className="mb-6 font-headings text-lg font-bold text-foreground">Apparence</h2>
+
+            <div className="space-y-6">
+              <div>
+                <p className="mb-3 text-sm font-semibold text-foreground">Thème</p>
+                <SegmentedControl
+                  label="Thème"
+                  value={preferences.theme}
+                  segments={THEME_SEGMENTS}
+                  onChange={(theme) => update({ theme })}
+                />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  « Système » suit le réglage de votre appareil.
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-3 text-sm font-semibold text-foreground">Densité</p>
+                <SegmentedControl
+                  label="Densité"
+                  value={preferences.density}
+                  segments={DENSITY_SEGMENTS}
+                  onChange={(density) => update({ density })}
+                  fill
+                />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Ajuste les espacements de toute l&apos;interface.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="mb-8 rounded-xl border border-border bg-sidebar p-5 sm:p-6">
+            <h2 className="mb-6 font-headings text-lg font-bold text-foreground">Audio</h2>
+
+            <div className="space-y-5">
+              <RangeField
+                label="Vitesse de lecture par défaut"
+                value={preferences.playbackRate}
+                min={0.5}
+                max={2}
+                step={0.1}
+                onChange={(playbackRate) => update({ playbackRate })}
+                leading="Lent"
+                trailing="Rapide"
+                hint={`Vitesse actuelle : ${preferences.playbackRate.toFixed(1)}×`}
+              />
+
+              <RangeField
+                label="Volume"
+                value={preferences.volume}
+                min={0}
+                max={1}
+                step={0.05}
+                onChange={(volume) => update({ volume })}
+                leading={<VolumeX size={16} />}
+                trailing={<Volume2 size={16} />}
+                hint={`Volume : ${Math.round(preferences.volume * 100)} %`}
+              />
+
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-input p-4">
+                <div>
+                  <p className="font-semibold text-foreground">Son de notification</p>
+                  <p className="text-xs text-muted-foreground">Jouer un son lors des événements</p>
+                </div>
+                <Toggle
+                  checked={preferences.notificationSound}
+                  onChange={(notificationSound) => update({ notificationSound })}
+                  label="Son de notification"
+                />
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Ces réglages s&apos;appliqueront au lecteur audio dès que la synthèse vocale sera
+                disponible.
+              </p>
+            </div>
+          </section>
+
+          <section className="mb-8 rounded-xl border border-border bg-sidebar p-5 sm:p-6">
+            <h2 className="mb-6 font-headings text-lg font-bold text-foreground">
+              Langue &amp; Région
+            </h2>
+
+            <div className="space-y-5">
+              <div>
+                <p className="mb-2 text-sm font-semibold text-foreground">
+                  Langue de l&apos;interface
+                </p>
+                <div className="flex items-center justify-between rounded-lg border border-border bg-input px-4 py-2.5 text-foreground">
+                  <span>{languageLabel}</span>
+                  <Link href="/settings/profil" className="text-sm font-semibold text-primary">
+                    Modifier
+                  </Link>
+                </div>
+                {/* Kept read-only here on purpose: the language belongs to the
+                    account, not to this device, so it lives on the user row
+                    and is edited in one place. Two editors for one value drift. */}
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Rattachée à votre compte, elle vous suit sur tous vos appareils.
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="format-date"
+                  className="mb-2 block text-sm font-semibold text-foreground"
+                >
+                  Format de date
+                </label>
+                <select
+                  id="format-date"
+                  value={preferences.dateFormat}
+                  onChange={(e) => update({ dateFormat: e.target.value as DateFormat })}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground outline-none focus:border-primary"
+                >
+                  {(Object.keys(DATE_FORMAT_LABELS) as DateFormat[]).map((key) => (
+                    <option key={key} value={key}>
+                      {DATE_FORMAT_LABELS[key]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="fuseau"
+                  className="mb-2 block text-sm font-semibold text-foreground"
+                >
+                  Fuseau horaire
+                </label>
+                <select
+                  id="fuseau"
+                  value={preferences.timeZone}
+                  onChange={(e) => update({ timeZone: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground outline-none focus:border-primary"
+                >
+                  {TIME_ZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border bg-sidebar p-5 sm:p-6">
+            <h2 className="mb-6 font-headings text-lg font-bold text-foreground">
+              Raccourcis clavier
+            </h2>
+            <ul className="space-y-3">
+              {SHORTCUTS.map((s) => (
+                <li
+                  key={s.keys}
+                  className="flex items-center justify-between gap-4 rounded-lg border border-border bg-input p-3"
+                >
+                  <span className="text-sm text-foreground">{s.action}</span>
+                  <kbd className="rounded bg-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                    {s.keys}
+                  </kbd>
+                </li>
+              ))}
+            </ul>
+            {/* The mockup lists these as a reference table and so do we. The
+                handlers belong to the editor screen, which does not exist yet;
+                listing them is documentation, not a claim that they work. */}
+            <p className="mt-4 text-xs text-muted-foreground">
+              Ces raccourcis s&apos;activeront avec l&apos;éditeur de synthèse vocale.
+            </p>
+          </section>
+        </div>
+      </div>
+    </AppShell>
   );
 }
