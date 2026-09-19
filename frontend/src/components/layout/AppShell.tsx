@@ -18,11 +18,9 @@ import TopBar from './TopBar';
 export default function AppShell({
   children,
   credits = null,
-  unreadCount = 0,
 }: {
   children: ReactNode;
   credits?: number | null;
-  unreadCount?: number;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -74,7 +72,7 @@ export default function AppShell({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar onOpenMenu={() => setMenuOpen(true)} credits={credits} unreadCount={unreadCount} />
+        <TopBar onOpenMenu={() => setMenuOpen(true)} credits={credits} />
         <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       </div>
     </div>

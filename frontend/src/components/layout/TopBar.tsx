@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, ChevronDown, CircleHelp, Coins, Menu, Plus, Search } from 'lucide-react';
+import { ChevronDown, CircleHelp, Coins, Menu, Plus, Search } from 'lucide-react';
+
+import NotificationsBell from '@/components/notifications/NotificationsBell';
 
 import { formatPrice } from '@/lib/utils';
 
@@ -16,11 +18,12 @@ interface TopBarProps {
    * a number the user could mistake for their own.
    */
   credits?: number | null;
-  /** Unread notifications. 0 hides the dot rather than showing a false alert. */
-  unreadCount?: number;
+  // No unreadCount prop: NotificationsBell fetches and owns that number,
+  // because marking items read has to move the badge. Passing it down would
+  // split one piece of state across three components.
 }
 
-export default function TopBar({ onOpenMenu, credits = null, unreadCount = 0 }: TopBarProps) {
+export default function TopBar({ onOpenMenu, credits = null }: TopBarProps) {
   return (
     <header className="flex h-14 items-center gap-3 border-b border-border bg-sidebar px-4 font-body lg:gap-4 lg:px-6">
       <button
@@ -62,18 +65,7 @@ export default function TopBar({ onOpenMenu, credits = null, unreadCount = 0 }: 
         <CircleHelp size={15} />
       </Link>
 
-      <div className="relative">
-        <button
-          type="button"
-          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} non lues` : 'Notifications'}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-input text-muted-foreground lg:h-8 lg:w-8"
-        >
-          <Bell size={15} />
-        </button>
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full border border-sidebar bg-red-500" />
-        )}
-      </div>
+      <NotificationsBell />
 
       <div className="hidden items-center gap-2 rounded-lg border border-border bg-input px-3 py-1.5 sm:flex">
         <Coins size={14} className="text-primary" />
