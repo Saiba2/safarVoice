@@ -1,0 +1,112 @@
+name: Tâches planifiées
+
+# Pourquoi ce workflow existe.
+#
+# Le plan Vercel Hobby n'accepte que des tâches quotidiennes. Or outbox-drain
+# et email-queue-drain sont ce qui délivre réellement les e-mails : un code de
+# vérification d'inscription attendrait jusqu'à 24 heures, rendant la création
+# de compte inutilisable.
+#
+# Les routes sont de simples points d'entrée HTTP protégés par
+# `Authorization: Bearer ${CRON_SECRET}`. Ce workflow les appelle donc
+# directement, sans qu'une ligne de code applicatif change. Les tâches
+# déclarées dans frontend/vercel.json restent en place comme filet de
+# sécurité quotidien.
+#
+# À savoir sur les horaires GitHub Actions : la granularité minimale est de
+# 5 minutes, et le déclenchement est « au mieux » — sur les exécuteurs
+# gratuits, un retard de 5 à 15 minutes est courant, surtout aux heures de
+# pointe. C'est acceptable ici (délivrer un e-mail en 10 minutes plutôt qu'en
+# 5), mais ce n'est pas une garantie temps réel.
+#
+# GitHub désactive les workflows planifiés d'un dépôt resté sans activité
+# pendant 60 jours. Un commit suffit à les réactiver.
+
+on:
+  schedule:
+    # Toutes les 5 minutes : les deux drains qui délivrent les e-mails.
+    - cron: '*/5 * * * *'
+    # Toutes les heures : le ménage, qui ne souffre pas d'attendre.
+    - cron: '0 * * * *'
+  # Permet de déclencher manuellement depuis l'onglet Actions, utile pour
+  # tester la configuration sans attendre le prochain créneau.
+  workflow_dispatch:
+
+# Deux exécutions simultanées draineraient la même file. Le verrou les
+# sérialise, et `cancel-in-progress: false` laisse la première finir plutôt
+# que de l'interrompre au milieu d'un envoi.
+concurrency:
+  group: safarvoice-cron
+  cancel-in-progress: false
+
+jobs:
+  drain:
+    name: Drainer l'outbox et la file d'e-mails
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Appeler les routes de drainage
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${APP_URL:-}" ]; then
+            echo "::error::La variable de dépôt APP_URL n'est pas définie (Settings → Secrets and variables → Actions → Variables)."
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Le secret CRON_SECRET n'est pas défini (Settings → Secrets and variables → Actions → Secrets)."
+            exit 1
+          fi
+
+          failed=0
+          for route in outbox-drain email-queue-drain; do
+            # --fail-with-body rend un statut non-2xx fatal tout en affichant
+            # le corps de la réponse, sans lequel un 401 serait indiscernable
+            # d'un 500.
+            if body=$(curl --silent --show-error --fail-with-body \
+                        --max-time 60 \
+                        -X POST "$APP_URL/api/cron/$route" \
+                        -H "Authorization: Bearer $CRON_SECRET" 2>&1); then
+              echo "✓ $route : $body"
+            else
+              echo "::error::$route a échoué : $body"
+              failed=1
+            fi
+          done
+          exit $failed
+
+  housekeeping:
+    name: Ménage horaire
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Ce job ne tourne que sur le créneau horaire, pas toutes les 5 minutes.
+    if: github.event.schedule == '0 * * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Appeler les routes de maintenance
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${APP_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::APP_URL ou CRON_SECRET manquant."
+            exit 1
+          fi
+
+          failed=0
+          for route in verification-cleanup order-expiration; do
+            if body=$(curl --silent --show-error --fail-with-body \
+                        --max-time 60 \
+                        -X POST "$APP_URL/api/cron/$route" \
+                        -H "Authorization: Bearer $CRON_SECRET" 2>&1); then
+              echo "✓ $route : $body"
+            else
+              echo "::error::$route a échoué : $body"
+              failed=1
+            fi
+          done
+          exit $failed

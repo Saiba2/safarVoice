@@ -21,3 +21,4 @@ next-env.d.ts
 amp
 node-compile-cache/
 
+.vercel

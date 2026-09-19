@@ -39,3 +39,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   });
 }
+
+// Vercel Cron invokes its scheduled paths with a GET request, while this
+// handler is a POST. Without this alias every scheduled run answered 405 and
+// the job silently never executed — verified against production before the
+// fix. GET simply delegates: the CRON_SECRET bearer check inside POST is what
+// actually guards the route, so exposing GET adds no access.
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  return POST(req);
+}
