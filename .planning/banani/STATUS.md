@@ -21,10 +21,38 @@ Stack cible: Next.js 16 App Router · React 19 · Tailwind v4 · Prisma 5 / Neon
       `preferredLanguage`, migration `5_user_profile_fields` appliquée sur Neon.
       7 nouveaux tests (577 au total).
 
+- [x] **Terms of Service** — `app/conditions/page.tsx`. Le marqueur
+      `[Juridiction applicable]` de la maquette est rendu tel quel, à trancher.
+- [x] **Paramètres généraux** — `app/settings/page.tsx` + palette sombre conçue
+      (`globals.css`), `lib/preferences.ts`, `contexts/PreferencesContext.tsx`,
+      `components/ui/{SegmentedControl,RangeField}.tsx`. Thème et densité réels.
+- [x] **Notifications (Dropdown)** — `components/notifications/NotificationsBell.tsx`,
+      câblé sur `/api/notifications`, `/count` et le `PATCH` de lecture.
+- [x] **Hors maquette, exigés par l'API** — `app/auth/mot-de-passe-oublie/` et
+      `app/auth/reinitialisation/`, liés depuis la connexion.
+
+## GROUPE A TERMINÉ — 6 écrans de la maquette + 5 écrans hors maquette
+
 ## In progress
-- [ ] Groupe A, écrans restants : GeneralSettings, NotificationsDropdown, TermsOfService
-- [ ] Écrans hors maquette rendus nécessaires par l'API : `/auth/mot-de-passe-oublie`
-      et `/auth/reinitialisation` (liés depuis la page de connexion, pas encore créés)
+- [ ] Rien en cours. Prochaine étape : groupe B (modèles métier + moteur TTS).
+
+## Reste à faire — groupe B
+Aucun de ces écrans n'a de backend. Ils exigent des modèles Prisma, des
+migrations, des routes, et pour la plupart le moteur ElevenLabs.
+
+| Écran | Modèles manquants |
+|---|---|
+| Synthèse Vocale | `TtsJob`, `Voice`, crédits |
+| Bibliothèque de voix | `Voice` |
+| Voix premium | `Voice` (premium), droits d'accès |
+| Mes fichiers audio | `AudioFile` (+ Cloudinary) |
+| Utilisation et facturation | `UsageLedger`, achats de crédits |
+| Plans de prix | `CreditPack` (+ Bictorys) |
+
+Rappel du risque consigné plus haut : **ElevenLabs ne documente ni le wolof,
+ni le swahili, ni le lingala**. Sur les six langues annoncées en page
+d'accueil, trois seulement sont confirmées. À vérifier avant de bâtir le
+groupe B dessus.
 
 ## Écarts relevés sur les paramètres du profil (2026-09-18)
 Sur ~14 contrôles de la maquette, 3 seulement avaient un backend. Décision
