@@ -1,10 +1,19 @@
 {
+  "$comment": "Vercel Hobby only accepts cron expressions that fire once per day; anything more frequent is refused at deploy time. The schedules below are therefore daily and staggered ten minutes apart so they never contend for the same runtime. IMPORTANT: outbox-drain and email-queue-drain are what actually deliver e-mails and notifications, so on this plan a webhook side-effect can wait up to 24 hours. That is a placeholder, not a working configuration — drive those two from an external scheduler (GitHub Actions, Upstash QStash) hitting the same routes with the CRON_SECRET bearer, or move to Pro and restore the original schedules recorded below.",
+  "$originalSchedules": {
+    "/api/cron/outbox-drain": "*/1 * * * *",
+    "/api/cron/email-queue-drain": "*/1 * * * *",
+    "/api/cron/verification-cleanup": "0 * * * *",
+    "/api/cron/order-expiration": "*/5 * * * *",
+    "/api/cron/webhook-log-purge": "0 0 * * *",
+    "/api/cron/email-job-purge": "0 0 * * *"
+  },
   "crons": [
-    { "path": "/api/cron/outbox-drain", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/email-queue-drain", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/verification-cleanup", "schedule": "0 * * * *" },
-    { "path": "/api/cron/order-expiration", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/webhook-log-purge", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/email-job-purge", "schedule": "0 0 * * *" }
+    { "path": "/api/cron/outbox-drain", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/email-queue-drain", "schedule": "10 2 * * *" },
+    { "path": "/api/cron/verification-cleanup", "schedule": "20 2 * * *" },
+    { "path": "/api/cron/order-expiration", "schedule": "30 2 * * *" },
+    { "path": "/api/cron/webhook-log-purge", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/email-job-purge", "schedule": "15 3 * * *" }
   ]
 }
